@@ -25,6 +25,8 @@ int main(int argc, char* argv[]) {
 			#endif
 
 			/* execute here */
+
+			FreeList(jit_code);
 		} else {
 			running = False;
 		}
