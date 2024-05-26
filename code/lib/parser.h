@@ -17,14 +17,12 @@ struct Atom {
 	char* name;
 };
 
-enum MemberType {
-	MEMBERTYPE_LIST,
-	MEMBERTYPE_ATOM
-};
-
 struct List {
 	struct MemberData {
-		enum MemberType type;
+		enum MemberType {
+			MEMBERTYPE_LIST,
+			MEMBERTYPE_ATOM
+		} type;
 		union GenericMember {
 			struct List* list;
 			struct Atom* atom;
@@ -42,6 +40,7 @@ extern void         AddAtom  (struct List* list, char* name);
 extern void         AddList  (struct List* parent_list, struct List* child_list);
 extern Bool         Validate (char* src);
 extern struct List* Parse    (char* src);
+extern void         FreeAtom (struct Atom* atom);
 extern void         FreeList (struct List* list);
 
 #endif

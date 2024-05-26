@@ -362,6 +362,25 @@ struct List* Parse(char* src) {
 	return ParseInternal(src, &iter);
 }
 
+void FreeAtom(struct Atom* atom) {
+	if (atom != NULL) {
+		free(atom->name);
+	}
+	free(atom);
+}
+
 void FreeList(struct List* list) {
+	if (list != NULL) {
+		int i;
+		for (i = 0; i < list->member_count; i++) {
+			if (list->members[i].type == MEMBERTYPE_LIST) {
+				FreeList(list->members[i].generic.list);
+			} else {
+				FreeAtom(list->members[i].generic.atom);
+			}
+		}
+		free(list->members);
+		free(list);
+	}
 }
 
