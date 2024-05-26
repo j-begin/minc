@@ -5,6 +5,15 @@
 #include "util.h"
 
 struct Atom {
+	enum AtomType {
+		ATOMTYPE_SYMBOL,
+		ATOMTYPE_STRING_LITERAL,
+		ATOMTYPE_INTEGER_LITERAL,
+		ATOMTYPE_DECIMAL_LITERAL,
+		ATOMTYPE_HEX_LITERAL,
+		ATOMTYPE_CHARACTER_LITERAL,
+		ATOMTYPE_BOOLEAN_LITERAL
+	} type;
 	char* name;
 };
 
@@ -25,10 +34,15 @@ struct List {
 	size_t member_capacity;
 };
 
+#ifndef NDEBUG
+extern void ShowAllAtoms(struct List* list);
+#endif
+
 extern void         AddAtom  (struct List* list, char* name);
 extern void         AddList  (struct List* parent_list, struct List* child_list);
 extern Bool         Validate (char* src);
 extern struct List* Parse    (char* src);
+extern void         FreeList (struct List* list);
 
 #endif
 
