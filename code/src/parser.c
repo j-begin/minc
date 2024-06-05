@@ -3,6 +3,9 @@
 #include <ctype.h>
 #include <string.h>
 
+/* REDO ALL OF THE LITERAL CHECKS BECAUSE YOU WERE AN IDIOT
+ * AND DID NOT PROGRAM THEM CORRECTLY. FIX THIS YOU IDIOT!!! */
+
 static Bool IsIntegerLiteral(char* text) {
 	if (text == NULL) {
 		return False;
@@ -68,38 +71,51 @@ static Bool IsHexLiteral(char* text) {
 	}
 }
 
-static Bool IsCharacterLiteral(char* text) {
+static Bool IsEscapeSequence(char* text) {
+	static const char* const escape_sequences[] = {
+		"@at",
+		"@quotes",
+		"@space",
+		"@newline",
+		"@tab",
+		"@bell",
+		"@backspace",
+		"@newpage",
+		"@return",
+		"@vert"
+	};
+	size_t i;
+
 	if (text == NULL) {
-		return False;
+		return False;	
 	}
 
-	if (strlen(text) == 2) {
-		if (text[0] == '@' && !isspace(text[1])) {
+	for (i = 0; i < (sizeof(escape_sequences) / sizeof(escape_sequences[0])); i++) {
+		if (strncmp(text, escape_sequences[i], strlen(escape_sequences[i])) == 0) {
 			return True;
-		} else {
-			return False;
 		}
-	} else if (strlen(text) > 2) {
-		char* escape_codes[] = {
-			"@space",
-			"@newline",
-			"@tab",
-			"@bell",
-			"@backspace",
-			"@newpage",
-			"@return",
-			"@vert"
-		};
-		int i;
-		for (i = 0; i < 8; i++) {
-			if (strcmp(text, escape_codes[i]) == 0) {
-				return True;
-			}
-		}
-		return False;
-	} else {
-		return False;
 	}
+
+	return False;
+}
+
+static Bool IsCharacterLiteral(char* text) {
+
+	if (text == NULL) {
+		return False;	
+	}
+
+	if (IsEscapeSequence(text)) {
+		return True;
+	}
+
+	if (text[0] != '\0') {
+		if (text[0] == '@' && isgraph(text[1])) {
+			return True;
+		}
+	}
+
+	return False;
 }
 
 static Bool IsBooleanLiteral(char* text) {
@@ -125,6 +141,8 @@ static Bool IsSymbolLiteral(char* text) {
 		if (i > 0) {
 			if (text[i] == '"') {
 				return False;
+			} else if (text[i] == '@') {
+				return False;
 			} else if (text[i] == '\'') {
 				return False;
 			} else if (text[i] == '`') {
@@ -137,6 +155,18 @@ static Bool IsSymbolLiteral(char* text) {
 	}
 
 	return True;
+}
+
+static Bool IsStringLiteral(char* text) {
+	if (text == NULL) {
+		return False;
+	}
+
+	if (text[0] == '"' && text[strlen(text) - 1] == '"') {
+		return True;
+	}
+
+	return False;
 }
 
 /* assumes that the first char in "src" is a '(' */
@@ -165,15 +195,12 @@ static struct List* ParseInternal(char* src, size_t* const iter) {
 			if (src[*iter] != '(' && src[*iter] != ')') {
 				if (!isspace(src[*iter])) { /* you're reading an atom */
 					if (src[*iter] == '"') {
-						(*iter)++;
-						atom_name_buffer[atom_name_buffer_flag++] = '"';
-						for (; src[*iter] != '"'; (*iter)++) {
+						do {
 							atom_name_buffer[atom_name_buffer_flag++] = src[*iter];
-						}
-						atom_name_buffer[atom_name_buffer_flag++] = '"';
-					} else {
-						atom_name_buffer[atom_name_buffer_flag++] = src[*iter];	
+							(*iter)++;
+						} while (src[*iter] != '"');
 					}
+					atom_name_buffer[atom_name_buffer_flag++] = src[*iter];
 				} else {
 					if (atom_name_buffer_flag > 0) {
 						atom_name_buffer[atom_name_buffer_flag + 1] = '\0';
@@ -194,7 +221,7 @@ static struct List* ParseInternal(char* src, size_t* const iter) {
 
 				child_list = ParseInternal(src, iter);
 				AddList(list_head, child_list);
-			} else if (src[*iter] == ')') {
+		} else if (src[*iter] == ')') {
 				if (atom_name_buffer_flag > 0) {
 					atom_name_buffer[atom_name_buffer_flag + 1] = '\0';
 					AddAtom(list_head, atom_name_buffer);
@@ -259,6 +286,37 @@ void ShowAllAtoms(struct List* list) {
 }
 #endif
 
+char* FileToCString(char* filename) {
+	FILE* f = NULL;
+	char* text;
+	size_t length = 0;
+	int i = 0;
+
+	if (filename == NULL) {
+		return NULL;
+	}
+
+	f = fopen(filename, "r");
+	if (f == NULL) {
+		return NULL;
+	}
+
+	while (fgetc(f) != EOF) {
+		length++;
+	}
+	fseek(f, 0, SEEK_SET);
+
+	text = calloc(sizeof(char), length);
+
+	for (i = 0; i < length; i++) {
+		text[i] = fgetc(f);
+	}
+
+	fclose(f);
+	
+	return text;
+}
+
 void AddAtom(struct List* list, char* name) {
 	if (list != NULL) {
 		/* allocate & add the name to the atom */
@@ -282,6 +340,8 @@ void AddAtom(struct List* list, char* name) {
 			list->members[list->member_count].generic.atom->type = ATOMTYPE_HEX_LITERAL;
 		} else if (IsCharacterLiteral(name)) {
 			list->members[list->member_count].generic.atom->type = ATOMTYPE_CHARACTER_LITERAL;
+		} else if (IsStringLiteral(name)) {
+			list->members[list->member_count].generic.atom->type = ATOMTYPE_STRING_LITERAL;
 		} else if (IsBooleanLiteral(name)) {
 			list->members[list->member_count].generic.atom->type = ATOMTYPE_BOOLEAN_LITERAL;
 		} else if (IsSymbolLiteral(name)) {
@@ -309,51 +369,63 @@ void AddList(struct List* parent_list, struct List* child_list) {
 }
 
 Bool Validate(char* src) {
-	int paren_count = 0;
 	Bool reading = True;
-	size_t i = 0;
+	long paren_count = 0;
+	int i = 0;
 
-	/* make sure first non-whitespace char is a list start */
-	for (i = 0; src[i] != '\0'; i++) {
-		if (src[i] == '#') {
+	/* make sure the first non-whitespace character is a open bracket */ 
+	for (i = 0; i < strlen(src); i++) {
+		if (!isspace(src[i])) {
+			if (src[i] != '(') {
+				return False;
+				puts("not (");
+			} else {
+				break;
+			}
+		}
+	}
+
+	/* make sure the last non-whitespace character is a close bracked */
+	for (i = strlen(src)-1; i >= 0; i--) {
+		if (!isspace(src[i])) {
+			if (src[i] != ')') {
+				puts("not )");
+				return False;
+			} else {
+				break;
+			}
+		}
+	}
+
+	for (i = 0; i < strlen(src); i++) {
+		if (src[i] == '#' || src[i] == '"') {
 			reading = !reading;
-		} else if (src[i] == '\n') {
-			reading = True;
 		} else if (reading) {
-			if (!isspace(src[i])) {
-				if (src[i] != '(') {
-					return False;
+			if (src[i] == '(') {
+				if (i > 0) {
+					if (src[i-1] != '@') {
+						paren_count++;
+					}
 				} else {
-					break;
+					paren_count++;
+				}
+			} else if (src[i] == ')') {
+				if (i > 0) {
+					if (src[i-1] != '@') {
+						paren_count--;
+					}
+				} else {
+					paren_count--;
 				}
 			}
 		}
 	}
 
-	/* make sure there are an equal number of parentheses */
-	reading = True;
-	for (i = 0; src[i] != '\0'; i++) {
-		if (src[i] == '#') {
-			reading = !reading;
-		} else if (src[i] == '\n') {
-			reading = True;
-		} else if (reading) {
-			if (src[i] == '(') {
-				paren_count++;
-			} else if (src[i] == ')') {
-				paren_count--;
-			}
-			if (paren_count < 0) {
-				fprintf(stderr, "%s has too many close parentheses\n", src);
-			}
-		}
+	if (paren_count == 0) {
+		return True;
+	} else {
+		return False;
 	}
-
-	if (paren_count > 0) {
-		fprintf(stderr, "%s has too many open parentheses\n", src);
-	}
-
-	return True;
 }
 
 /* TODO */
@@ -384,3 +456,28 @@ void FreeList(struct List* list) {
 	}
 }
 
+struct ListGroup* CreateListGroup(char* code) {
+
+	if (Validate(code)) {
+		#ifndef NDEBUG
+		puts("-- FILE START --");
+		puts(code);
+		puts("-- FILE STOP --");
+		#endif
+	} else {
+		puts("INVALID CODE");
+	}
+
+	return NULL;
+}
+
+void FreeListGroup(struct ListGroup* lg) {
+	if (lg != NULL) {
+		int i = 0;
+		for (i = 0; i < lg->list_count; i++) {
+			FreeList(lg->lists[i]);
+		}
+		free(lg->lists);
+		free(lg);
+	}
+}
