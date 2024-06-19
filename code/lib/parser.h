@@ -52,6 +52,5 @@ extern void              FreeList        (struct List* list);
 extern struct ListGroup* CreateListGroup (char* code);
 extern void              FreeListGroup   (struct ListGroup* lg);
 
-
 #endif
 

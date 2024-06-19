@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
 		puts("REPL STARTED");
 
 		while (running) {
-			struct List* jit_code = NULL;
+			struct ListGroup* forms;
 			char code[8192];
 			size_t code_flag = 0;
 			int i;
@@ -19,16 +19,18 @@ int main(int argc, char* argv[]) {
 			printf("* ");
 			scanf(" %8191[^\n]", code);
 			if (code[0] != '\0') {
-				if (Validate(code)) {
-					jit_code = Parse(code);
-				}
+				int j = 0;
+
+				forms = CreateListGroup(code);
+
 				#ifndef NDEBUG
-				ShowAllAtoms(jit_code);
+				for (j = 0; j < forms->list_count; j++) {
+					ShowAllAtoms(forms->lists[j]);
+					puts("");
+				}
 				#endif
 
-				/* execute here */
-
-				FreeList(jit_code);
+				FreeListGroup(forms);
 			} else {
 				running = False;
 			}

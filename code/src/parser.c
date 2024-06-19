@@ -306,7 +306,7 @@ char* FileToCString(char* filename) {
 	}
 	fseek(f, 0, SEEK_SET);
 
-	text = calloc(sizeof(char), length);
+	text = calloc(length, sizeof(char));
 
 	for (i = 0; i < length; i++) {
 		text[i] = fgetc(f);
@@ -457,18 +457,63 @@ void FreeList(struct List* list) {
 }
 
 struct ListGroup* CreateListGroup(char* code) {
+	struct ListGroup* lg = NULL;
+	size_t i = 0, j = 0;
+	long paren_count = 0;
+	long start_paren = -1;
+	long end_paren = -1;
+	char buffer = '\0';
+	size_t CODE_LENGTH = 0;
 
-	if (Validate(code)) {
-		#ifndef NDEBUG
-		puts("-- FILE START --");
-		puts(code);
-		puts("-- FILE STOP --");
-		#endif
-	} else {
-		puts("INVALID CODE");
+	lg = malloc(sizeof(*lg));
+	lg->lists = calloc(10, sizeof(struct List));
+	lg->list_count = 0;
+	lg->list_capacity = 10;
+	CODE_LENGTH = strlen(code);
+
+	for (i = 0; code[i] != '\0'; i++) {
+		if (code[i] == '(') {
+			if (paren_count == 0) {
+				start_paren = i;
+			}
+			paren_count++;
+		} else if (code[i] == ')') {
+			paren_count--;
+			if (paren_count == 0) {
+				end_paren = i;
+			}
+		}
+
+		if (start_paren >= 0 && end_paren >= 0) {
+			char* form = NULL;
+			int form_flag = 0;
+
+			form = calloc(sizeof(char), end_paren - start_paren + 1);
+
+			for (j = start_paren; j <= end_paren; j++) {
+				form[form_flag++] = code[j];
+			}
+
+			if (Validate(form)) {
+				if (lg->list_count + 1 >= lg->list_capacity) {
+					lg->list_capacity *= 2;
+					lg->lists = realloc(lg->lists, sizeof(*(lg->lists)) * lg->list_capacity);
+				}
+				lg->lists[lg->list_count++] = Parse(form);
+			} else {
+				fprintf(stderr, "Failed to parse form: %s\n", form);
+				free(lg);
+				free(form);
+				return NULL;
+			}
+
+			free(form);
+			start_paren = -1;
+			end_paren = -1;
+		}
 	}
 
-	return NULL;
+	return lg;
 }
 
 void FreeListGroup(struct ListGroup* lg) {
