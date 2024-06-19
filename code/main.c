@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
 		puts("REPL STARTED");
 
 		while (running) {
-			struct ListGroup* forms;
+			struct ListBuffer* forms;
 			char code[8192];
 			size_t code_flag = 0;
 			int i;
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
 			if (code[0] != '\0') {
 				int j = 0;
 
-				forms = CreateListGroup(code);
+				forms = CreateListBuffer(code);
 
 				#ifndef NDEBUG
 				for (j = 0; j < forms->list_count; j++) {
@@ -30,18 +30,18 @@ int main(int argc, char* argv[]) {
 				}
 				#endif
 
-				FreeListGroup(forms);
+				FreeListBuffer(forms);
 			} else {
 				running = False;
 			}
 		}
 	} else {
-		struct ListGroup* forms = NULL;
+		struct ListBuffer* forms = NULL;
 
 		{
 			char* file_text = NULL;
 			file_text = FileToCString(argv[1]);
-			forms = CreateListGroup(file_text);
+			forms = CreateListBuffer(file_text);
 			free(file_text);
 		}
 

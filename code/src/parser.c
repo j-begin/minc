@@ -249,7 +249,7 @@ void ShowAllAtoms(struct List* list) {
 			for (j = 0; j < indentation; j++) {
 				printf("  ");
 			}
-			printf("(%d) NAME: %s ", i, list->members[i].generic.atom->name);
+			printf("(%d) NAME: %s ", i, list->members[i].generic.atom->identifier);
 			switch (list->members[i].generic.atom->type) {
 				case ATOMTYPE_SYMBOL:
 					printf("TYPE: SYMBOL");
@@ -328,8 +328,8 @@ void AddAtom(struct List* list, char* name) {
 		/* add data */
 		list->members[list->member_count].type = MEMBERTYPE_ATOM;
 		list->members[list->member_count].generic.atom = malloc(sizeof(struct Atom));
-		list->members[list->member_count].generic.atom->name = malloc(sizeof(char) * strlen(name));
-		strcpy(list->members[list->member_count].generic.atom->name, name);
+		list->members[list->member_count].generic.atom->identifier = malloc(sizeof(char) * strlen(name));
+		strcpy(list->members[list->member_count].generic.atom->identifier, name);
 		
 		/* figure out the type of atom */
 		if (IsIntegerLiteral(name)) {
@@ -436,7 +436,7 @@ struct List* Parse(char* src) {
 
 void FreeAtom(struct Atom* atom) {
 	if (atom != NULL) {
-		free(atom->name);
+		free(atom->identifier);
 	}
 	free(atom);
 }
@@ -456,8 +456,8 @@ void FreeList(struct List* list) {
 	}
 }
 
-struct ListGroup* CreateListGroup(char* code) {
-	struct ListGroup* lg = NULL;
+struct ListBuffer* CreateListBuffer(char* code) {
+	struct ListBuffer* lg = NULL;
 	size_t i = 0, j = 0;
 	long paren_count = 0;
 	long start_paren = -1;
@@ -516,7 +516,7 @@ struct ListGroup* CreateListGroup(char* code) {
 	return lg;
 }
 
-void FreeListGroup(struct ListGroup* lg) {
+void FreeListBuffer(struct ListBuffer* lg) {
 	if (lg != NULL) {
 		int i = 0;
 		for (i = 0; i < lg->list_count; i++) {
@@ -526,3 +526,4 @@ void FreeListGroup(struct ListGroup* lg) {
 		free(lg);
 	}
 }
+
