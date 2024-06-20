@@ -6,7 +6,7 @@
 
 struct Atom {
 	enum AtomType {
-		ATOMTYPE_SYMBOL,
+		ATOMTYPE_SYMBOL = 0,
 		ATOMTYPE_STRING_LITERAL,
 		ATOMTYPE_INTEGER_LITERAL,
 		ATOMTYPE_DECIMAL_LITERAL,
@@ -21,7 +21,8 @@ struct List {
 	struct MemberData {
 		enum MemberType {
 			MEMBERTYPE_LIST,
-			MEMBERTYPE_ATOM
+			MEMBERTYPE_ATOM,
+			MEMBERTYPE_VOID
 		} type;
 		union GenericMember {
 			struct List* list;

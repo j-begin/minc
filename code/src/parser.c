@@ -177,6 +177,7 @@ static struct List* ParseInternal(char* src, size_t* const iter) {
 	Bool reading = True;
 	char atom_name_buffer[ATOM_NAME_BUFFER_SIZE] = { 0 };
 	size_t atom_name_buffer_flag = 0;
+	long i;
 
 	memset(atom_name_buffer, '\0', sizeof(char) * ATOM_NAME_BUFFER_SIZE);
 
@@ -184,6 +185,9 @@ static struct List* ParseInternal(char* src, size_t* const iter) {
 	list_head->member_count = 0;
 	list_head->member_capacity = 10;
 	list_head->members = malloc(sizeof(struct MemberData) * list_head->member_capacity);
+	for (i = 0; i < list_head->member_capacity; i++) {
+		list_head->members[i].type = MEMBERTYPE_VOID;
+	}
 
 	*iter += 1;
 	for (; src[*iter] != '\0'; (*iter)++) {
