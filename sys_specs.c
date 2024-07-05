@@ -17,7 +17,7 @@ int main(void) {
 	int i;
 
 	if (C_LONG_SIZE != 32 && C_LONG_SIZE != 64) {
-		fprintf(stderr, "Minc only supports 32 or 64 bit systems, and this C compiler doesn't support 32 bit integers.\n");
+		fprintf(stderr, "Minc only supports 32 or 64 bit systems, and this C compiler doesn't support either.\n");
 		return 1;
 	}
 
@@ -51,7 +51,7 @@ int main(void) {
 		} else if (C_LONG_SIZE >= i) {
 			type = 3;
 		}
-		fprintf(sys_specs_h, "typedef %-5s i%d;\ntypedef %-5s u%d;\n", TYPES[type], i, TYPES[type], i);
+		fprintf(sys_specs_h, "typedef %-5s i%d;\ntypedef unsigned %-5s u%d;\n", TYPES[type], i, TYPES[type], i);
 	}
 
 	fputs("typedef u8 bool;\n#define true ((bool)1)\n#define false ((bool)0)\n", sys_specs_h);
